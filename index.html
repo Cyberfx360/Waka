@@ -1212,13 +1212,17 @@ function render(){
   if((s==="routes"||s==="trip")&&!S.opts.length){ S.opts=sorted(planAll()); if(!S.opts.length) s="plan"; }
   if(s==="live"&&!S.live) s=S.opts.length?"trip":"plan";
   if(s==="done"&&!S.done) s="plan";
+  /* same screen re-drawn (GPS, server data…): keep where the person scrolled to */
+  const same=s===S.lastScreen, keepP=same?$("#panel").scrollTop:0, keepY=same?scrollY:0, fx=document.activeElement&&document.activeElement.id, selS=fx&&document.activeElement.selectionStart;
   document.body.dataset.screen=s;
   document.querySelectorAll("[data-nav]").forEach(a=>a.classList.toggle("on",a.dataset.nav===s||(s!=="insights"&&s!=="add"&&s!=="me"&&s!=="share"&&s!=="ai"&&s!=="opinion"&&s!=="coach"&&s!=="vendor"&&a.dataset.nav==="plan")));
   $("#panel").innerHTML=SCREENS[s]();
   after[s]&&after[s]();
   document.querySelectorAll("details.walkdir[open]").forEach(fillWalk);
   drawMap(s);
-  $("#panel").scrollTop=0; if(innerWidth<900) scrollTo(0,0);
+  if(same){ $("#panel").scrollTop=keepP; if(innerWidth<900&&Math.abs(scrollY-keepY)>2) scrollTo(0,keepY); if(fx){ const el=document.getElementById(fx); if(el&&el.focus){ el.focus({preventScroll:true}); try{ if(selS!=null) el.setSelectionRange(selS,selS); }catch(e){} } } }
+  else { $("#panel").scrollTop=0; if(innerWidth<900) scrollTo(0,0); }
+  S.lastScreen=s;
 }
 const after={};
 function sorted(o){ const k={best:(a,b)=>a.min-b.min, cheap:(a,b)=>a.fare-b.fare||a.min-b.min, fewest:(a,b)=>a.boards-b.boards||a.min-b.min}[S.sort]; return [...o].sort(k); }
@@ -1651,7 +1655,7 @@ function startGps(){ try{ watchId=navigator.geolocation.watchPosition(p=>{ const
     const l=L.o.legs[L.leg]; if(l.type==="ride"){ let best=L.idx,bd=Infinity; l.seq.forEach((s,i)=>{ if(i<L.idx) return; const d=hav(pos,nodePt(s)); if(d<bd){bd=d;best=i;} }); if(bd<350&&best>L.idx){ L.idx=best; buzzCheck(); announce(); } }
     else if(!l.visit&&hav(pos,nodePt(l.to))<120){ advance(); return; }
     else if(L.W){ const st=L.W.steps; let k=L.ws||0; for(let i=k;i<st.length;i++) if(hav(pos,st[i].loc)<30) k=i+1; if(k>(L.ws||0)&&k<st.length){ L.ws=k; say(stepWords(st[k],nameOf(l.to))); } }
-    render(); }, ()=>{ toast("Couldn't get GPS. Tap the buttons as you go."); }, {enableHighAccuracy:true,maximumAge:5000}); }catch(e){ toast("GPS isn't available here. Tap the buttons as you go."); } }
+    if(document.body.dataset.screen==="live") render(); }, ()=>{ toast("Couldn't get GPS. Tap the buttons as you go."); }, {enableHighAccuracy:true,maximumAge:5000}); }catch(e){ toast("GPS isn't available here. Tap the buttons as you go."); } }
 function stopGps(){ try{ if(watchId!=null) navigator.geolocation.clearWatch(watchId); }catch(e){} watchId=null; }
 
 /* ================= server (Supabase) ================= */
