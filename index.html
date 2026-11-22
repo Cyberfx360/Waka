@@ -1060,7 +1060,7 @@ function plan(from,to,pk,wide){
   return {legs:out,min,fare,walkM,boards,sig:out.filter(l=>l.type==="ride").map(l=>l.r.id+":"+l.from+">"+l.to).join("|")||"walk"};
 }
 function planAll(){
-  const {from,to}=S; if(!from||!to) return []; prepRoadside();
+  const {from,to}=S; if(!from||!to) return []; if(S.via&&!S.inVia){ S.inVia=true; try{ const v=viaPlan(); return v?[v]:[]; } finally{ S.inVia=false; } } prepRoadside();
   const seen=new Map();
   for(const pk of Object.keys(PREF)){ const o=plan(from,to,pk); if(o&&!seen.has(o.sig)) seen.set(o.sig,o); }
   if(!seen.size) for(const pk of Object.keys(PREF)){ const o=plan(from,to,pk,true); if(o&&!seen.has(o.sig)){ o.wide=true; seen.set(o.sig,o); } }
@@ -1069,8 +1069,8 @@ function planAll(){
     tag(o=>Math.round(o.min),"Fastest"); tag(o=>o.fare,"Cheapest"); tag(o=>o.boards,"Fewest changes"); }
   return opts.slice(0,5);
 }
-const nodePt = id => id==="O"? S.from : id==="D"? S.to : stops[id]||VIRT[id];
-const nameOf = id => id==="O"? S.from.name : id==="D"? S.to.name : (stops[id]||VIRT[id])?.name||id;
+const nodePt = id => id==="O"? S.from : id==="D"? S.to : id==="V"? S.via : stops[id]||VIRT[id];
+const nameOf = id => id==="O"? S.from.name : id==="D"? S.to.name : id==="V"? (S.via&&S.via.name||"your stop") : (stops[id]||VIRT[id])?.name||id;
 function shout(l){ const r=l.r; if(r.mode!=="danfo"&&r.mode!=="taxi") return null; if(l.i<l.j) return r.name; const t=stops[r.stops[0]].name.replace(/\s*\(.*\)|\s+(Garage|Under Bridge|Station.*)$/g,""); return t+"! "+t+"!"; }
 function bearing(a,b){ const t=Math.PI/180, y=Math.sin((b.lon-a.lon)*t)*Math.cos(b.lat*t), x=Math.cos(a.lat*t)*Math.sin(b.lat*t)-Math.sin(a.lat*t)*Math.cos(b.lat*t)*Math.cos((b.lon-a.lon)*t); return (Math.atan2(y,x)/t+360)%360; }
 const COMPASS=["north","north-east","east","south-east","south","south-west","west","north-west"];
@@ -1095,8 +1095,9 @@ function changeHint(o,k){ const l=o.legs[k]; if(!l||l.type!=="ride") return null
   lines.push(VIRT[l.to]&&!H?`Come down by the road${VIRT[l.to].near?` near ${VIRT[l.to].near}`:""}. The ${modeWord(l.r.mode)} keeps going, so tell them before you reach.`:H?`Come down at ${at}.`:ends?`The ${modeWord(l.r.mode)} ends at ${at}. Everybody comes down.`:`Come down at ${at}. This ${modeWord(l.r.mode)} keeps going to ${toward(l)}, so don't stay on.`);
   let n=o.legs[k+1];
   if(!n){ const e=S.to&&nodePt(l.to); lines.push(e&&hav(e,S.to)>80?`Walk the last ${Math.round(hav(e,S.to))} m to ${S.to.name}.`:`You don reach.`); }
+  else if(n.visit) lines.push(`Then go into ${nameOf("V")} and buy what you need.`);
   else if(n.type==="walk"){ const after=o.legs[k+2];
-    lines.push(after?`Your next ride does not load at ${at}. Walk ${Math.round(n.m)} m to ${nameOf(n.to)}.`:`Walk ${Math.round(n.m)} m to ${nameOf(n.to)}.`);
+    lines.push(after&&after.visit?`Walk ${Math.round(n.m)} m to ${nameOf("V")}.`:after?`Your next ride does not load at ${at}. Walk ${Math.round(n.m)} m to ${nameOf(n.to)}.`:`Walk ${Math.round(n.m)} m to ${nameOf(n.to)}.`);
     if(after&&after.type==="ride"){ const h=sideHint(o,k+2); if(h&&h.cross) cross=true; } }
   else { const h=sideHint(o,k+1); if(h){ cross=h.cross; lines.push(h.text); }
     if(!HOP[n.r.mode]) lines.push(`Not every ${modeWord(n.r.mode)} at ${nameOf(n.from)} goes your way. Wait for the one going to ${toward(n)}${shout(n)?`; the conductor will shout “${shout(n)}”`:""}.`);
@@ -1204,7 +1205,7 @@ function wireAC(inp, onPick){
 const S = Object.assign({from:null,to:null,opts:[],sel:0,sort:"best",live:null,done:null,share:{slot:slotNow(),legs:[{mode:"danfo",from:null,to:null,fare:"",shout:""}]},area:null,islot:"all",srv:{key:null}}, {});
 const last=store.get("waka.last",null); if(last){ S.from=last.from; S.to=last.to; }
 if(!S.from){ const a=stops.ikeja_along, b=stops.yaba; S.from={name:a.name,lat:a.lat,lon:a.lon,stopId:a.id}; S.to={name:b.name,lat:b.lat,lon:b.lon,stopId:b.id}; }
-const SCREENS={plan:planView,routes:routesView,trip:tripView,live:liveView,done:doneView,share:shareView,insights:insightsView,add:addView,me:meView,ai:()=>aiView(),opinion:()=>opinionView(),coach:()=>coachView()};
+const SCREENS={plan:planView,routes:routesView,trip:tripView,live:liveView,done:doneView,share:shareView,insights:insightsView,add:addView,me:meView,ai:()=>aiView(),opinion:()=>opinionView(),coach:()=>coachView(),vendor:()=>vendorView()};
 function go(s){ if(location.hash!=="#"+s) location.hash=s; else render(); }
 function render(){
   let s=(location.hash||"#plan").slice(1); if(!SCREENS[s]) s="plan";
@@ -1212,7 +1213,7 @@ function render(){
   if(s==="live"&&!S.live) s=S.opts.length?"trip":"plan";
   if(s==="done"&&!S.done) s="plan";
   document.body.dataset.screen=s;
-  document.querySelectorAll("[data-nav]").forEach(a=>a.classList.toggle("on",a.dataset.nav===s||(s!=="insights"&&s!=="add"&&s!=="me"&&s!=="share"&&s!=="ai"&&s!=="opinion"&&s!=="coach"&&a.dataset.nav==="plan")));
+  document.querySelectorAll("[data-nav]").forEach(a=>a.classList.toggle("on",a.dataset.nav===s||(s!=="insights"&&s!=="add"&&s!=="me"&&s!=="share"&&s!=="ai"&&s!=="opinion"&&s!=="coach"&&s!=="vendor"&&a.dataset.nav==="plan")));
   $("#panel").innerHTML=SCREENS[s]();
   after[s]&&after[s]();
   document.querySelectorAll("details.walkdir[open]").forEach(fillWalk);
@@ -1253,6 +1254,7 @@ function planView(){
     <a class="tile" href="#insights"><span class="ti" aria-hidden="true">₦</span><span><b>What riders pay</b><span class="s">Real fares near a stop</span></span></a>
     <a class="tile" href="#share"><span class="ti" aria-hidden="true">↗</span><span><b>Share a trip</b><span class="s">How you moved, what you paid</span></span></a>
   </div>
+  ${poiPanel("near")}
   <a class="slim" href="#opinion"><span aria-hidden="true">💬</span><span style="flex:1"><b>Your opinion</b> <span class="mute">· the Waka team reads every one</span></span><span aria-hidden="true">›</span></a>
   <div><div class="hd" style="font-size:20px;margin-bottom:2px">Recent</div>
   ${recent.length? recent.map(([t,i])=>`<button data-act="recent" data-i="${i}" class="recent">
@@ -1262,7 +1264,7 @@ function planView(){
 after.plan=()=>{ wireAC($("#fromIn"),p=>{S.from=p; $("#fromIn").value=p.name; saveLast(); S.fit=true; render();}); wireAC($("#toIn"),p=>{S.to=p; $("#toIn").value=p.name; saveLast(); S.fit=true; render();}); };
 const saveLast=()=>store.set("waka.last",{from:S.from,to:S.to});
 
-function legBadges(o){ return o.legs.map((l,k)=>(l.type==="walk"?`<span class="badge walk">${Math.max(1,Math.round(l.min))} min walk</span>`:badge(chipFor(l.r)))+(k<o.legs.length-1?'<span aria-hidden="true" style="color:#9AA093">›</span>':"")).join(" "); }
+function legBadges(o){ return o.legs.map((l,k)=>(l.visit?`<span class="badge walk">🛍️ ${esc(nameOf("V"))}</span>`:l.type==="walk"?`<span class="badge walk">${Math.max(1,Math.round(l.min))} min walk</span>`:badge(chipFor(l.r)))+(k<o.legs.length-1?'<span aria-hidden="true" style="color:#9AA093">›</span>':"")).join(" "); }
 function routesView(){
   const o=S.opts;
   return `
@@ -1284,6 +1286,7 @@ function stepsHtml(o, compact){
   let h=`<ol class="steps">`;
   h+=`<li><div class="rail"><span style="width:16px;height:16px;border-radius:50%;background:var(--go);border:3px solid #fff;box-shadow:0 0 0 1.5px var(--ink)"></span><span class="ln" style="background:${o.legs[0].type==="ride"?lineColor(o.legs[0].r):"transparent"}"></span></div><div style="padding-bottom:12px"><b>Start at ${esc(S.from.name)}</b></div></li>`;
   o.legs.forEach((l,k)=>{
+    if(l.type==="walk"&&l.visit){ h+=`<li><div class="rail"><span class="dt"></span></div><div style="padding:0 0 14px;display:flex;align-items:center;gap:10px"><span style="width:36px;height:36px;border-radius:10px;background:#F5F3FF;display:flex;align-items:center;justify-content:center;flex:none" aria-hidden="true">🛍️</span><span><b>Stop at ${esc(nameOf("V"))}</b><span class="small mute" style="display:block">Buy what you need, then continue. Waka allows about 15 min.</span></span></div></li>`; return; }
     if(l.type==="walk"){ h+=`<li><div class="rail"><span class="dt"></span></div><div style="padding:0 0 14px;display:flex;align-items:center;gap:10px"><span style="width:36px;height:36px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;flex:none">${ICON.walk}</span><span><b>Walk ${Math.max(1,Math.round(l.min))} min</b><span class="small mute" style="display:block">${Math.round(l.m)} m to ${esc(nameOf(l.to))}${k===0&&o.legs[1]?" · the nearest place to catch your ride":""}</span></span></div></li>
       <li><div class="rail"></div><div style="padding:0 0 12px 46px">${walkDetails(nodePt(l.from),nodePt(l.to),nameOf(l.to),(k===0||k===o.legs.length-1)&&!compact,false)}</div></li>`; return; }
     const c=chipFor(l.r), sh=shout(l), from=nodePt(l.from);
@@ -1317,13 +1320,16 @@ function tripView(){
     <div style="display:flex;align-items:flex-end;gap:14px;margin-top:12px"><span class="hd" style="font-size:44px">${fmtMin(o.min)}</span><span style="padding-bottom:3px"><b style="font-size:20px;color:var(--yel);display:block">${o.boards?naira(o.fare):"Free"}</b><span class="small" style="color:#C4C9BE">${o.boards} ride${o.boards===1?"":"s"} · arrive ${clock(o.min)}</span></span></div>
     <div class="stripe" style="position:absolute;left:0;right:0;bottom:0"></div>
   </div>
+  ${S.via?`<div class="card row" style="flex-wrap:nowrap;background:#F5F3FF;border-color:#DDD6FE"><span aria-hidden="true">🛍️</span><span class="small" style="flex:1">Stopping at <b>${esc(S.via.name)}</b> on the way (about 15 min there).</span><button class="chip" data-act="viaClear" style="min-height:34px">Remove</button></div>`:""}
   ${stepsHtml(o)}
+  ${poiPanel("trip")}
   <div class="sheetbar"><a class="btn ghost" href="#share" data-act="prefillShare">Fix a fare</a><button class="btn" style="flex:1" data-act="start">Start trip ${ICON.arrow}</button></div>`;
 }
 function liveView(){
   const L=S.live, o=L.o, l=o.legs[L.leg];
   let head, body;
-  if(l.type==="walk"){ head=`Walk to ${esc(nameOf(l.to))}`; body=`<div class="small mute">${Math.round(l.m)} m · about ${Math.max(1,Math.round(l.min))} min</div>${walkDetails(nodePt(l.from),nodePt(l.to),nameOf(l.to),true,true)}<button class="btn blk wide" data-act="next">I'm there</button>`; }
+  if(l.type==="walk"&&l.visit){ head=`Shop at ${esc(nameOf("V"))}`; body=`<div class="small mute">Take your time. When you're done, tap below and Waka continues your trip.</div><button class="btn blk wide" data-act="next">Done, continue</button>`; }
+  else if(l.type==="walk"){ head=`Walk to ${esc(nameOf(l.to))}`; body=`<div class="small mute">${Math.round(l.m)} m · about ${Math.max(1,Math.round(l.min))} min</div>${walkDetails(nodePt(l.from),nodePt(l.to),nameOf(l.to),true,true)}<button class="btn blk wide" data-act="next">I'm there</button>`; }
   else { const left=l.seq.length-1-L.idx, cur=nodePt(l.seq[L.idx]), dropName=nameOf(l.to);
     head= L.idx===0? `Board at ${esc(cur.name)}` : left===0? `Drop here: ${esc(dropName)}` : `${left} stop${left>1?"s":""} to ${esc(dropName)}`;
     body=`${L.idx===0? (HOP[l.r.mode]?`<div class="hd" style="font-size:22px">${HOP[l.r.mode].r.name} to ${esc(dropName)}</div><div class="small mute">Agree the price first: about ${naira(l.fare)}</div>`:shout(l)?`<div class="call"><div class="tiny" style="color:#C4C9BE">Listen for</div><div class="hd">“${esc(shout(l))}”</div></div>`:`<div class="hd" style="font-size:22px">${esc(l.r.name)}</div>`):""}
@@ -1640,10 +1646,10 @@ function track(pos,acc,spd){ const L=S.live; if(!L) return; const l=L.o.legs[L.l
     if(L.dist<250&&!al[key+"here"]){ al[key+"here"]=1; const c=changeHint(L.o,L.leg); notify("Drop here",`${nameOf(l.to)}.${c&&L.o.legs[L.leg+1]?" "+c.text.replace(/^Come down at [^.]*\.\s*/,""):""}`,"waka-drop"); }
     const off=offRoute(pos,l); L.off = off>1500 ? (L.off||0)+1 : 0;
     if(L.off===2) notify("Off the route?",`You seem to be away from the ${modeWord(l.r.mode)} route. Tap Re-route if you entered the wrong one.`,"waka-off"); }
-  if(l.type==="walk"&&L.dist<150&&!al[key+"walk"]){ al[key+"walk"]=1; const n=L.o.legs[L.leg+1]; notify("You don reach",n?`${nameOf(l.to)}. Your ${modeWord(n.r.mode)} loads here.`:`${nameOf(l.to)}.`,"waka-walk"); } }
+  if(l.type==="walk"&&!l.visit&&L.dist<150&&!al[key+"walk"]){ al[key+"walk"]=1; const n=L.o.legs[L.leg+1]; notify("You don reach",n?`${nameOf(l.to)}. Your ${modeWord(n.r.mode)} loads here.`:`${nameOf(l.to)}.`,"waka-walk"); } }
 function startGps(){ try{ watchId=navigator.geolocation.watchPosition(p=>{ const L=S.live; if(!L) return; L.gps=true; const pos={lat:p.coords.latitude,lon:p.coords.longitude}; L.pos=pos; track(pos,p.coords.accuracy,p.coords.speed);
     const l=L.o.legs[L.leg]; if(l.type==="ride"){ let best=L.idx,bd=Infinity; l.seq.forEach((s,i)=>{ if(i<L.idx) return; const d=hav(pos,nodePt(s)); if(d<bd){bd=d;best=i;} }); if(bd<350&&best>L.idx){ L.idx=best; buzzCheck(); announce(); } }
-    else if(hav(pos,nodePt(l.to))<120){ advance(); return; }
+    else if(!l.visit&&hav(pos,nodePt(l.to))<120){ advance(); return; }
     else if(L.W){ const st=L.W.steps; let k=L.ws||0; for(let i=k;i<st.length;i++) if(hav(pos,st[i].loc)<30) k=i+1; if(k>(L.ws||0)&&k<st.length){ L.ws=k; say(stepWords(st[k],nameOf(l.to))); } }
     render(); }, ()=>{ toast("Couldn't get GPS. Tap the buttons as you go."); }, {enableHighAccuracy:true,maximumAge:5000}); }catch(e){ toast("GPS isn't available here. Tap the buttons as you go."); } }
 function stopGps(){ try{ if(watchId!=null) navigator.geolocation.clearWatch(watchId); }catch(e){} watchId=null; }
@@ -1720,6 +1726,87 @@ Object.assign(ACT,{
     queue("operator_ratings",{operator:cut(op,60),route_id:b.dataset.r||null,rating:R.stars,on_time:R.ontime===undefined?null:R.ontime,note:null});
     S.opRate={sent:true}; toast(`Thanks! Your rating for ${op} helps the next traveller.`); render(); }
 });
+
+/* ================= along your way: shops, food, fuel, vendors (OpenStreetMap + approved Waka vendors) ================= */
+const CATS={
+  food:{label:"Food",icon:"🍗",q:'nwr["amenity"~"^(fast_food|restaurant|cafe|food_court)$"]'},
+  super:{label:"Supermarket",icon:"🛒",q:'nwr["shop"~"^(supermarket|convenience|wholesale|mall|department_store)$"]'},
+  fuel:{label:"Fuel",icon:"⛽",q:'nwr["amenity"="fuel"]'},
+  pharm:{label:"Pharmacy",icon:"💊",q:'nwr["amenity"~"^(pharmacy|chemist)$"];nwr["shop"="chemist"]'},
+  atm:{label:"ATM / bank",icon:"🏧",q:'nwr["amenity"~"^(atm|bank|bureau_de_change)$"]'},
+  market:{label:"Market",icon:"🧺",q:'nwr["amenity"="marketplace"]'},
+  vendor:{label:"Vendors",icon:"🧑🏾‍🍳",q:null}};
+const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+const poiMem={};
+async function overpass(q){ for(const u of OVERPASS){ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),20000);
+    try{ const r=await fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"},signal:ctl.signal}); if(r.ok) return await r.json(); }catch(e){} finally{ clearTimeout(t); } }
+  return null; }
+/* points along a trip (or one point), thinned so the query stays small */
+function tripPoints(o){ const pts=[]; o.legs.forEach(l=>{ const ids=l.type==="ride"?l.seq:[l.from,l.to]; ids.forEach(id=>{ const p=nodePt(id); if(p&&(!pts.length||hav(pts[pts.length-1],p)>300)) pts.push({lat:p.lat,lon:p.lon,name:p.name}); }); });
+  if(pts.length<=30) return pts; const step=(pts.length-1)/29; return Array.from({length:30},(_,i)=>pts[Math.round(i*step)]); }
+async function findPlaces(cat,pts,radius,word){ const key=cat+"|"+(word||"")+"|"+radius+"|"+pts.map(p=>p.lat.toFixed(3)+","+p.lon.toFixed(3)).join(";"); if(poiMem[key]) return poiMem[key];
+  let out=[];
+  if(cat==="vendor"||!word){ if(online&&sb){ try{ const c=pts[Math.floor(pts.length/2)]; const span=Math.max(...pts.map(p=>hav(p,c))); const {data}=await sb.rpc("vendors_near",{p_lat:c.lat,p_lon:c.lon,p_radius_m:Math.round(span+radius)});
+        (data||[]).filter(v=>cat==="vendor"||v.category===cat).forEach(v=>out.push({name:v.name,lat:v.lat,lon:v.lon,cat:v.category,sub:[v.sells,v.phone].filter(Boolean).join(" · "),vendor:true,phone:v.phone})); }catch(e){} } }
+  if(cat!=="vendor"){ const coords=pts.map(p=>`${p.lat.toFixed(5)},${p.lon.toFixed(5)}`).join(",");
+    const sel = word? `nwr["name"~"${word.replace(/["\\]/g,"")}",i];nwr["brand"~"${word.replace(/["\\]/g,"")}",i]` : CATS[cat].q;
+    const q=`[out:json][timeout:25];(${sel.split(";").map(x=>x+`(around:${radius},${coords});`).join("")});out center 80;`;
+    const j=await overpass(q); if(!j&&!out.length) return null;
+    const catOf=t=>/fast_food|restaurant|cafe|food_court/.test(t.amenity||"")?"food":t.amenity==="fuel"?"fuel":/pharmacy|chemist/.test((t.amenity||"")+(t.shop||""))?"pharm":/atm|bank|bureau/.test(t.amenity||"")?"atm":t.amenity==="marketplace"?"market":t.shop?"super":cat;
+    (j&&j.elements||[]).forEach(e=>{ const t=e.tags||{}, lat=e.lat??e.center?.lat, lon=e.lon??e.center?.lon; if(lat==null) return; const c2=catOf(t);
+      const nm=t.name||t.brand||t["name:en"]||t.operator||(["fuel","atm","pharm"].includes(c2)?CATS[c2].label.replace(" / bank","")+(c2==="fuel"?" station":""):null); if(!nm) return;
+      out.push({name:nm,lat:+lat,lon:+lon,cat:c2,sub:[t.brand&&t.brand!==nm?t.brand:null,t["addr:street"],t.opening_hours?("Open "+t.opening_hours):null].filter(Boolean).join(" · ")}); }); }
+  /* how far from the route, and near which stop */
+  out.forEach(x=>{ let bd=Infinity,bp=null; pts.forEach(p=>{ const d=hav(x,p); if(d<bd){bd=d;bp=p;} }); x.off=bd; x.nearName=bp&&bp.name; });
+  const seen=new Set(); out=out.filter(x=>{ const k=norm(x.name)+Math.round(x.lat*2000)+","+Math.round(x.lon*2000); if(seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a,b)=>(b.vendor-a.vendor)||(a.off-b.off)).slice(0,25);
+  return poiMem[key]=out; }
+function poiHtml(list,where){ if(list===null) return `<p class="small mute" style="margin:0">Couldn't reach OpenStreetMap. Check your internet and try again.</p>`;
+  if(!list.length) return `<p class="small mute" style="margin:0">Nothing found ${where}. Try another type, or search a name like “Bokku” or “Chicken Republic”.</p>`;
+  return list.map((x,i)=>`<div class="row" style="flex-wrap:nowrap;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)"><span style="font-size:20px" aria-hidden="true">${(CATS[x.cat]||CATS.vendor).icon}</span>
+    <span style="flex:1;min-width:0"><b style="display:block;font-size:14.5px">${esc(x.name)}${x.vendor?` <span class="tiny" style="background:#DCFCE7;color:#166534;border-radius:6px;padding:1px 6px">Waka vendor</span>`:""}</b><span class="tiny mute">${metres(x.off)} from ${esc(x.nearName||"your way")}${x.sub?" · "+esc(x.sub):""}</span></span>
+    <span style="display:flex;flex-direction:column;gap:4px">${S.poiMode==="trip"?`<button class="chip" style="min-height:32px;font-size:12.5px;padding:0 10px" data-act="poiVia" data-i="${i}">Stop on the way</button>`:""}<button class="chip" style="min-height:32px;font-size:12.5px;padding:0 10px" data-act="poiGo" data-i="${i}">Go here</button></span></div>`).join(""); }
+function poiPanel(mode){ const P=S.poi||{};
+  return `<div class="card" style="display:flex;flex-direction:column;gap:8px"><b>${mode==="trip"?"Need something on the way?":"Find near you"}</b>
+    <div class="hscroll">${Object.entries(CATS).map(([k,c])=>`<button class="chip" data-act="poiCat" data-v="${k}" data-m="${mode}" aria-pressed="${P.cat===k&&!P.word&&P.mode===mode}">${c.icon} ${c.label}</button>`).join("")}</div>
+    <form class="row" style="flex-wrap:nowrap;gap:8px" data-poiform="${mode}"><input class="inp" name="w" placeholder="Search a name: Bokku, Chicken Republic, Total…" value="${esc(P.mode===mode&&P.word||"")}" style="flex:1;min-height:42px"><button class="btn ghost" style="min-height:42px">Find</button></form>
+    ${P.mode===mode&&P.loading?`<p class="small mute" style="margin:0">Looking ${mode==="trip"?"along your way":"around you"}…</p>`:""}
+    ${P.mode===mode&&P.list!==undefined&&!P.loading?`<div>${poiHtml(P.list,mode==="trip"?"along this route":"near here")}</div>`:""}
+    ${mode!=="trip"?`<a class="tiny" href="#vendor" style="font-weight:600">Sell something? List your business on Waka</a>`:""}</div>`; }
+async function runPoi(mode,cat,word){ S.poiMode=mode; S.poi={mode,cat,word,loading:true}; render();
+  let pts; if(mode==="trip"){ const o=S.opts[S.sel]; pts=o?tripPoints(o):[]; } else { const c=S.from||{lat:curCity().center[0],lon:curCity().center[1]}; pts=[{lat:c.lat,lon:c.lon,name:c.name||"here"}]; }
+  const list=pts.length? await findPlaces(word?"food":cat,pts,mode==="trip"?500:2500,word) : [];
+  S.poi={mode,cat,word,list}; render(); }
+function addPoiPins(){ const P=S.poi; if(!P||!P.list||!map) return; P.list.forEach(x=>L.circleMarker([x.lat,x.lon],{radius:7,color:"#fff",weight:2,fillColor:x.vendor?"#16A34A":"#7C3AED",fillOpacity:1}).bindTooltip(esc(x.name)).addTo(pins)); }
+document.addEventListener("submit",e=>{ const f=e.target.closest("[data-poiform]"); if(!f) return; e.preventDefault(); const w=f.w.value.trim(); if(w.length<2) return; runPoi(f.dataset.poiform,null,w); });
+/* the vendor form */
+function vendorView(){ return `<div><h1 class="hd" style="font-size:30px;margin:0">List your business</h1><p class="small mute" style="margin:4px 0 0">Riders see you when they pass near you. The Waka team checks every listing before it shows.</p></div>
+  <label class="f">Business name<input class="inp" id="vName" maxlength="80" placeholder="e.g. Mama Ada Kitchen"></label>
+  <div><div class="small" style="font-weight:600;margin-bottom:6px">What kind?</div><div class="row">${Object.entries(CATS).map(([k,c])=>`<button class="chip" data-act="vCat" data-v="${k}" aria-pressed="${S.vCat===k}">${c.icon} ${c.label}</button>`).join("")}</div></div>
+  <label class="f">What do you sell? (optional)<input class="inp" id="vSells" maxlength="140" placeholder="e.g. Rice, beans, swallow. Open 7am–9pm"></label>
+  <label class="f">Phone for customers (optional)<input class="inp" id="vPhone" maxlength="16" inputmode="tel" placeholder="e.g. 0803 000 0000"></label>
+  <label class="f">Where is it?<input class="inp" id="vWhere" placeholder="Paste a Google Maps pin, or leave empty to use where you are now"></label>
+  <button class="btn wide" data-act="vSave">Send for checking ${ICON.arrow}</button>`; }
+Object.assign(ACT,{
+  poiCat(b){ runPoi(b.dataset.m,b.dataset.v,null); },
+  poiGo(b){ const x=S.poi&&S.poi.list&&S.poi.list[+b.dataset.i]; if(!x) return; S.to={name:x.name,lat:x.lat,lon:x.lon,full:[x.name,x.sub].filter(Boolean).join(", ")}; S.via=null; saveLast(); S.opts=[]; location.hash="routes"; render(); },
+  poiVia(b){ const x=S.poi&&S.poi.list&&S.poi.list[+b.dataset.i]; if(!x) return; S.via={name:x.name,lat:x.lat,lon:x.lon}; S.opts=[]; toast(`Added ${x.name} as a stop on the way.`); location.hash="trip"; render(); },
+  viaClear(){ S.via=null; S.opts=[]; render(); },
+  vCat(b){ S.vCat=b.dataset.v; document.querySelectorAll("[data-act=vCat]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S.vCat)); },
+  vSave(){ const name=$("#vName").value.trim(), sells=$("#vSells").value.trim(), phone=$("#vPhone").value.replace(/[^0-9+ ]/g,"").trim(), w=$("#vWhere").value.trim();
+    if(name.length<2){ toast("Write the business name."); return; } if(!S.vCat){ toast("Pick what kind of business."); return; }
+    const save=p=>{ queue("vendors",{city:cityAt(p)?.id||settings.city,name:cut(name,80),category:S.vCat,sells:sells?cut(sells,140):null,phone:phone.length>=7?phone:null,lat:+p.lat.toFixed(6),lon:+p.lon.toFixed(6)}); S.vCat=null; toast("Sent! The Waka team go check am, then riders go see you."); go("plan"); };
+    if(w){ const p=parseLoc(w,refPt()); if(!p){ toast("Waka can't read that pin. Paste the numbers like 5.5521, 6.2358."); return; } save(p); }
+    else locateMe(save); }
+});
+/* a stop on the way: plan to the shop, then from the shop to where you're going */
+function viaPlan(){ const V=S.via; if(!V||!S.from||!S.to) return null;
+  const to0=S.to; S.to=V; const a=sorted(planAll())[0]; S.to=to0; const from0=S.from; S.from=V; const b=sorted(planAll())[0]; S.from=from0; prepRoadside();
+  if(!a||!b) return null; const swap=(ids,o,n)=>ids&&ids.map(x=>x===o?n:x);
+  const la=a.legs.map(l=>({...l,from:l.from==="D"?"V":l.from,to:l.to==="D"?"V":l.to,seq:swap(l.seq,"D","V"),vseq:swap(l.vseq,"D","V")}));
+  const lb=b.legs.map(l=>({...l,from:l.from==="O"?"V":l.from,to:l.to==="O"?"V":l.to,seq:swap(l.seq,"O","V"),vseq:swap(l.vseq,"O","V")}));
+  const visit={type:"walk",visit:true,from:"V",to:"V",m:0,min:15};
+  const legs=[...la,visit,...lb]; return {legs,min:a.min+15+b.min,fare:a.fare+b.fare,walkM:a.walkM+b.walkM,boards:a.boards+b.boards,sig:"via:"+a.sig+"|"+b.sig,tags:["With your stop"],via:true}; }
 /* ================= opinions (saved to the feedback table, no AI needed) ================= */
 let opinions = store.get("waka.opinions",[]);
 const OP_TOPICS=[["fares","Fares"],["routes","Routes & stops"],["drivers","Drivers & safety"],["roads","Roads & traffic"],["app","The Waka app"],["idea","An idea"],["other","Something else"]];
@@ -1908,7 +1995,7 @@ function drawMap(screen){
   { const lg=$("#legend"); if(lg){ const ms=o?[...new Set(o.legs.filter(l=>l.type==="ride").map(l=>l.r))]:[]; lg.style.display=ms.length?"":"none";
       if(ms.length) lg.innerHTML=[...new Map(ms.map(r=>[lineColor(r),[lineColor(r),chipFor(r).label]])).values()].map(([c,t])=>`<span><i style="background:${c}"></i>${esc(t)}</span>`).join(""); } }
   if(o){ const all=[];
-    o.legs.forEach((l,k)=>{ if(l.type==="walk"){ const pts=[nodePt(l.from),nodePt(l.to)].map(p=>[p.lat,p.lon]); const w=L.polyline(pts,{color:settings.layer==="sat"?"#fff":"#555",weight:4,dashArray:"2 8",lineCap:"round"}).addTo(jl); all.push(...pts); snapLeg([w],pts,"foot",tok); }
+    o.legs.forEach((l,k)=>{ if(l.visit) return; if(l.type==="walk"){ const pts=[nodePt(l.from),nodePt(l.to)].map(p=>[p.lat,p.lon]); const w=L.polyline(pts,{color:settings.layer==="sat"?"#fff":"#555",weight:4,dashArray:"2 8",lineCap:"round"}).addTo(jl); all.push(...pts); snapLeg([w],pts,"foot",tok); }
       else { const pts=l.seq.map(s=>{ const q=nodePt(s); return [q.lat,q.lon]; }); /* until the real road loads, only a faint dotted hint, never a solid straight line */
         const a=L.polyline(pts,{color:"#121511",weight:0,opacity:0}).addTo(jl), b=L.polyline(pts,{color:lineColor(l.r),weight:4,opacity:.45,dashArray:"1 9",lineCap:"round"}).addTo(jl);
         const solid=[{weight:10,opacity:.9},{weight:6,opacity:1,dashArray:null}]; if(l.r.mode!=="rail") snapLeg([a,b],pts,"car",tok,solid); else { a.setStyle(solid[0]); b.setStyle(solid[1]); }
@@ -1919,7 +2006,8 @@ function drawMap(screen){
       map.setView([here.lat,here.lon],15); }
     else map.fitBounds(L.latLngBounds(all),{padding:[30,30],maxZoom:15});
   } else if(screen==="add"){ map.setView(map.getCenter(), Math.max(map.getZoom(),16)); }
-  else { pin(S.from,"#3DDC84","Start"); pin(S.to,"#FF5A5F",S.to&&S.to.full?S.to.full:"Destination");
+  addPoiPins(); if(S.via) pin(S.via,"#7C3AED",S.via.name);
+  if(o||screen==="add"){} else { pin(S.from,"#3DDC84","Start"); pin(S.to,"#FF5A5F",S.to&&S.to.full?S.to.full:"Destination");
     if(S.fit&&S.from&&S.to){ S.fit=false; map.fitBounds(L.latLngBounds([[S.from.lat,S.from.lon],[S.to.lat,S.to.lon]]),{padding:[40,40],maxZoom:16}); } }
 }
 
