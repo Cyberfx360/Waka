@@ -707,6 +707,16 @@ body[data-screen=routes] #mapbox{display:block;height:34vh}
 body[data-screen=trip] #mapbox{display:block;height:26vh}
 body[data-screen=live] #mapbox{display:block;height:46vh}
 body[data-screen=add] #mapbox{display:block;height:42vh}
+#tripbar{position:fixed;left:12px;right:12px;bottom:calc(76px + var(--safe-b,0px));z-index:31;display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border-radius:16px;padding:12px 14px;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:14px}
+#tripbar[hidden]{display:none}
+#tripbar .tb-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#D5D9CF}
+#tripbar b{color:var(--yel);white-space:nowrap}
+#tripbar .pulse{width:10px;height:10px;border-radius:50%;background:#3DDC84;flex:none;box-shadow:0 0 0 0 rgba(61,220,132,.6);animation:pl 1.6s infinite}
+@keyframes pl{to{box-shadow:0 0 0 10px rgba(61,220,132,0)}}
+@media(prefers-reduced-motion:reduce){#tripbar .pulse{animation:none}}
+@media(min-width:900px){#tripbar{left:auto;right:24px;bottom:24px;max-width:420px}}
+body[data-screen=live] #tripbar{display:none}
+@media(max-width:899px){body.hastrip #panel{padding-bottom:calc(170px + var(--safe-b,0px))}}
 .bnav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:6px 0 calc(8px + var(--safe-b))}
 .bnav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:500;color:var(--mute);text-decoration:none;min-height:52px;justify-content:center}
 .bnav a .ic{height:30px;width:56px;border-radius:999px;display:flex;align-items:center;justify-content:center}
@@ -831,7 +841,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mu
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121511" stroke-width="2.4" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
   </button>
   <nav class="dnav" aria-label="Main">
-    <a href="#plan" data-nav="plan">Plan</a><a href="#insights" data-nav="insights">What riders pay</a><a href="#share" data-nav="share">Share a trip</a><a href="#add" data-nav="add">Add a stop</a><a href="#ai" data-nav="ai">Waka AI</a><a href="#me" data-nav="me">Me</a>
+    <a href="#plan" data-nav="plan">Plan</a><a href="#insights" data-nav="insights">What riders pay</a><a href="#share" data-nav="share">Share a trip</a><a href="#shop" data-nav="shop">Shop</a><a href="#add" data-nav="add">Add a stop</a><a href="#ai" data-nav="ai">Waka AI</a><a href="#me" data-nav="me">Me</a>
   </nav>
 </header>
 <div class="stripe" aria-hidden="true"></div>
@@ -851,12 +861,13 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mu
 <nav class="bnav" aria-label="Main">
   <a href="#plan" data-nav="plan"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg></span>Plan</a>
   <a href="#insights" data-nav="insights"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Fares</a>
-  <a href="#add" data-nav="add"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.3-7-12a7 7 0 0 1 14 0c0 5.7-7 12-7 12z"/><path d="M12 6v6M9 9h6"/></svg></span>Add stop</a>
+  <a href="#shop" data-nav="shop"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span>Shop</a>
   <a href="#ai" data-nav="ai"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M12 8.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="currentColor"/></svg></span>Waka AI</a>
   <a href="#me" data-nav="me"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span>Me</a>
 </nav>
 <div class="dlg" id="dlg" role="dialog" aria-modal="true"><div class="in" id="dlgIn"></div></div>
 <div class="toast" id="toast" role="status"></div>
+<a id="tripbar" href="#live" hidden><span class="pulse" aria-hidden="true"></span><span class="tb-t"></span><b>Back to trip ›</b></a>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js"></script>
 <script>
@@ -1205,13 +1216,14 @@ function wireAC(inp, onPick){
 const S = Object.assign({from:null,to:null,opts:[],sel:0,sort:"best",live:null,done:null,share:{slot:slotNow(),legs:[{mode:"danfo",from:null,to:null,fare:"",shout:""}]},area:null,islot:"all",srv:{key:null}}, {});
 const last=store.get("waka.last",null); if(last){ S.from=last.from; S.to=last.to; }
 if(!S.from){ const a=stops.ikeja_along, b=stops.yaba; S.from={name:a.name,lat:a.lat,lon:a.lon,stopId:a.id}; S.to={name:b.name,lat:b.lat,lon:b.lon,stopId:b.id}; }
-const SCREENS={plan:planView,routes:routesView,trip:tripView,live:liveView,done:doneView,share:shareView,insights:insightsView,add:addView,me:meView,ai:()=>aiView(),opinion:()=>opinionView(),coach:()=>coachView(),vendor:()=>vendorView()};
+const SCREENS={plan:planView,routes:routesView,trip:tripView,live:liveView,done:doneView,share:shareView,insights:insightsView,add:addView,me:meView,ai:()=>aiView(),opinion:()=>opinionView(),coach:()=>coachView(),vendor:()=>vendorView(),shop:()=>shopView()};
 function go(s){ if(location.hash!=="#"+s) location.hash=s; else render(); }
 function render(){
   let s=(location.hash||"#plan").slice(1); if(!SCREENS[s]) s="plan";
   if((s==="routes"||s==="trip")&&!S.opts.length){ S.opts=sorted(planAll()); if(!S.opts.length) s="plan"; }
   if(s==="live"&&!S.live) s=S.opts.length?"trip":"plan";
   if(s==="done"&&!S.done) s="plan";
+  tripBar(s);
   /* same screen re-drawn (GPS, server data…): keep where the person scrolled to */
   const same=s===S.lastScreen, keepP=same?$("#panel").scrollTop:0, keepY=same?scrollY:0, fx=document.activeElement&&document.activeElement.id, selS=fx&&document.activeElement.selectionStart;
   document.body.dataset.screen=s;
@@ -1258,6 +1270,7 @@ function planView(){
     <a class="tile" href="#insights"><span class="ti" aria-hidden="true">₦</span><span><b>What riders pay</b><span class="s">Real fares near a stop</span></span></a>
     <a class="tile" href="#share"><span class="ti" aria-hidden="true">↗</span><span><b>Share a trip</b><span class="s">How you moved, what you paid</span></span></a>
   </div>
+  <a class="slim" href="#shop" style="background:#F0FDF4"><span aria-hidden="true">🛒</span><span style="flex:1"><b>Shop near you</b> <span class="mute">· open now, today's prices, your list</span></span><span aria-hidden="true">›</span></a>
   ${poiPanel("near")}
   <a class="slim" href="#opinion"><span aria-hidden="true">💬</span><span style="flex:1"><b>Your opinion</b> <span class="mute">· the Waka team reads every one</span></span><span aria-hidden="true">›</span></a>
   <div><div class="hd" style="font-size:20px;margin-bottom:2px">Recent</div>
@@ -1479,6 +1492,7 @@ function addView(){
 function meView(){
   return `
   <h1 class="hd" style="font-size:32px;margin:0">Me</h1>
+  <a class="btn ghost wide" href="#add">Add a stop Waka doesn't have</a>
   <a class="btn ghost wide" href="#opinion">Give your opinion${opinions.length?` · ${opinions.length} sent`:""}</a>
   ${(S.mineStatus||[]).length?`<div class="card" style="display:flex;flex-direction:column;gap:8px"><b>What you added</b>${S.mineStatus.map(x=>`<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span>${x.kind==="stop"?"📍":"🚌"} ${esc(x.name)}</span><span class="small" style="font-weight:600;color:${x.status==="confirmed"?"var(--green)":"#B45309"}">${x.status==="confirmed"?`✓ On Waka · ${x.riders} riders`:"Waiting for 1 more rider"}</span></div>`).join("")}<span class="tiny mute">Tell a friend who uses the same stop or motor to add it too.</span></div>`:""}
   <details class="card"><summary><b>How Waka decides what to show</b></summary><ul class="small" style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
@@ -1539,7 +1553,7 @@ const ACT = {
   recent(b){ const t=trips[+b.dataset.i]; S.from=t.from; S.to=t.to; saveLast(); ACT.find(); },
   sort(b){ S.sort=b.dataset.v; S.opts=sorted(S.opts); S.sel=0; render(); },
   pick(b){ S.sel=+b.dataset.i; render(); },
-  start(){ const o=S.opts[S.sel]; S.live={o,leg:0,idx:0,gps:false,buzzed:{}};
+  start(){ const o=S.opts[S.sel]; S.live={o,leg:0,idx:0,gps:false,buzzed:{},t0:Date.now()}; saveLive();
     const how=o.legs.filter(l=>l.type==="ride").map(l=>chipFor(l.r).label.toLowerCase()).join(" + ")||"walk";
     trips.push({from:S.from,to:S.to,min:Math.round(o.min),fare:o.fare,how,at:Date.now()}); trips=trips.slice(-50); store.set("waka.trips",trips); announce(); go("live"); beep.c=beep.c; askNotify(); keepAwake(true); if(navigator.geolocation&&location.protocol==="https:") startGps(); },
   alerts(){ settings.alerts=settings.alerts===false; saveSettings(); if(settings.alerts) askNotify().then(ok=>toast(ok?"Alerts on. Your phone go ring and buzz near your stop.":"Alerts on in the app. Allow notifications in your phone settings to get them on the lock screen.")); render(); },
@@ -1548,7 +1562,7 @@ const ACT = {
   repeat(){ const was=settings.voice; settings.voice=true; announce(); settings.voice=was; },
   gps(){ const L=S.live; if(L.gps){ stopGps(); L.gps=false; render(); return; } startGps(); },
   shareLive(){ const L=S.live, txt=`I'm on my way to ${S.to.name} with Waka. Arriving about ${clock(remaining())}.`; if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); } else copy(txt,"Trip details copied. Paste them in WhatsApp."); },
-  reroute(){ const L=S.live, l=L.o.legs[L.leg]; const here = l.type==="walk"? nodePt(l.from) : nodePt(l.seq[L.idx]); S.from={name:here.name,lat:here.lat,lon:here.lon,stopId:here.id}; stopGps(); S.live=null; ACT.find(); },
+  reroute(){ const L=S.live, l=L.o.legs[L.leg]; const here = l.type==="walk"? nodePt(l.from) : nodePt(l.seq[L.idx]); S.from={name:here.name,lat:here.lat,lon:here.lon,stopId:here.id}; stopGps(); S.live=null; store.set("waka.live",null); ACT.find(); },
   endTrip(){ finishTrip(false); },
   fare(b){ S.done.fares[+b.dataset.k]=+b.dataset.v; render(); },
   fareOther(b){ const k=+b.dataset.k; openDlg(`<h2 class="hd" style="font-size:26px;margin:0 0 10px">How much did you pay?</h2><label class="f">Amount in naira<input class="inp" id="otherFare" inputmode="numeric" placeholder="350"></label><div class="row" style="margin-top:12px"><button class="btn" data-act="otherOk" data-k="${k}">Save</button><button class="btn ghost" data-act="closeDlg">Cancel</button></div>`); setTimeout(()=>$("#otherFare")?.focus(),50); },
@@ -1581,7 +1595,7 @@ const ACT = {
   export(){ copy(JSON.stringify({exported:new Date().toISOString(),trips,reports,stops:mine,routes:myRoutes,opinions},null,1),"Copied. Paste it into WhatsApp or email to the Waka team."); },
   osmLive(){ liveFetch(); },
   wipe(){ openDlg(`<h2 class="hd" style="font-size:26px;margin:0 0 8px">Clear Waka data on this device?</h2><p class="small mute">Your trips, shared fares, added stops and loaded OpenStreetMap stops will be removed from this phone.</p><div class="row"><button class="btn blk" data-act="wipeOk">Clear</button><button class="btn ghost" data-act="closeDlg">Cancel</button></div>`); },
-  wipeOk(){ ["waka.trips","waka.reports","waka.mine","waka.osm","waka.snap","waka.last","waka.chat","waka.routes","waka.opinions"].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}}); location.reload(); },
+  wipeOk(){ ["waka.trips","waka.reports","waka.mine","waka.osm","waka.snap","waka.last","waka.chat","waka.routes","waka.opinions","waka.list"].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}}); location.reload(); },
   layer(b){ settings.layer=b.dataset.v; saveSettings(); setLayer(); },
   locate(){ locateMe(p=>{ if(map) map.setView([p.lat,p.lon],16); }); }
 };
@@ -1606,12 +1620,23 @@ function announce(){ const L=S.live; if(!L) return; const l=L.o.legs[L.leg];
   if(left===0){ const c=changeHint(L.o,L.leg); say(`Drop here at ${drop}.${l.r.mode==="danfo"?" Shout, O wa!":""}${c&&L.o.legs[L.leg+1]?" "+c.text.replace(/^Come down at [^.]*\.\s*/,""):""}`); return; }
   if(left===1){ say(`Get ready. Next stop is ${drop}. That is where you drop.`); return; }
   say(`Now at ${spoken(nameOf(l.seq[L.idx]))}. ${left} stops to ${drop}.`); }
+
+/* ===== a started trip stays reachable: banner on every screen, and it survives closing the app ===== */
+function tripBar(s){ const b=$("#tripbar"); if(!b) return; const L=S.live; document.body.classList.toggle("hastrip",!!L&&s!=="live"); if(!L||s==="live"){ b.hidden=true; return; }
+  const l=L.o.legs[L.leg], what= l.type==="ride"? (L.idx===0?`Board at ${nameOf(l.from)}`:`On the ${modeWord(l.r.mode)} · drop at ${nameOf(l.to)}`) : l.visit? `Shopping at ${nameOf("V")}` : `Walk to ${nameOf(l.to)}`;
+  b.querySelector(".tb-t").textContent=`Trip in progress · ${what}`; b.hidden=false; }
+function saveLive(){ const L=S.live; if(!L){ store.set("waka.live",null); return; }
+  store.set("waka.live",{from:S.from,to:S.to,via:S.via||null,sig:L.o.sig,leg:L.leg,idx:L.idx,t0:L.t0||Date.now(),alerts:L.alerts||{},buzzed:L.buzzed||{}}); }
+function restoreLive(){ const R=store.get("waka.live",null); if(!R||!R.from||!R.to||Date.now()-R.t0>12*3600e3){ store.set("waka.live",null); return; }
+  S.from=R.from; S.to=R.to; S.via=R.via; const opts=sorted(planAll()); const o=opts.find(x=>x.sig===R.sig)||opts[0]; if(!o){ store.set("waka.live",null); return; }
+  S.opts=opts; S.sel=opts.indexOf(o); S.live={o,leg:Math.min(R.leg,o.legs.length-1),idx:R.idx||0,gps:false,buzzed:R.buzzed,alerts:R.alerts,t0:R.t0};
+  setTimeout(()=>toast("Your trip is still on. Tap “Back to trip” to continue."),600); }
 function advance(){ const L=S.live, l=L.o.legs[L.leg];
-  if(l.type==="ride"&&L.idx<l.seq.length-1){ L.idx++; buzzCheck(); render(); announce(); return; }
-  if(L.leg<L.o.legs.length-1){ L.leg++; L.idx=0; render(); announce(); return; }
+  if(l.type==="ride"&&L.idx<l.seq.length-1){ L.idx++; buzzCheck(); saveLive(); render(); announce(); return; }
+  if(L.leg<L.o.legs.length-1){ L.leg++; L.idx=0; saveLive(); render(); announce(); return; }
   finishTrip(true); }
 function buzzCheck(){ const L=S.live, l=L.o.legs[L.leg]; if(l.type!=="ride") return; const left=l.seq.length-1-L.idx; if(left===1&&!L.buzzed[L.leg]){ L.buzzed[L.leg]=1; notify("Next stop is yours",`Get ready: ${nameOf(l.to)} is next.`,"waka-next"); } }
-function finishTrip(completed){ const L=S.live; stopGps(); keepAwake(false); S.live=null; if(!L){ go("plan"); return; }
+function finishTrip(completed){ const L=S.live; stopGps(); keepAwake(false); S.live=null; store.set("waka.live",null); if(!L){ go("plan"); return; }
   if(completed) say(`You don reach ${spoken(S.to.name)}! Safe trip.`);
   if(completed){ const how=L.o.legs.filter(l=>l.type==="ride").map(l=>l.r.mode).join(" + ")||"walk"; queue("trips",tripRow({from:S.from,to:S.to,how,fare:L.o.fare,min:L.o.min})); }
   const rides=L.o.legs.filter(l=>l.type==="ride"); settings.askN=(settings.askN||0)+1; saveSettings();
@@ -1759,7 +1784,7 @@ async function findPlaces(cat,pts,radius,word){ const key=cat+"|"+(word||"")+"|"
     const catOf=t=>/fast_food|restaurant|cafe|food_court/.test(t.amenity||"")?"food":t.amenity==="fuel"?"fuel":/pharmacy|chemist/.test((t.amenity||"")+(t.shop||""))?"pharm":/atm|bank|bureau/.test(t.amenity||"")?"atm":t.amenity==="marketplace"?"market":t.shop?"super":cat;
     (j&&j.elements||[]).forEach(e=>{ const t=e.tags||{}, lat=e.lat??e.center?.lat, lon=e.lon??e.center?.lon; if(lat==null) return; const c2=catOf(t);
       const nm=t.name||t.brand||t["name:en"]||t.operator||(["fuel","atm","pharm"].includes(c2)?CATS[c2].label.replace(" / bank","")+(c2==="fuel"?" station":""):null); if(!nm) return;
-      out.push({name:nm,lat:+lat,lon:+lon,cat:c2,sub:[t.brand&&t.brand!==nm?t.brand:null,t["addr:street"],t.opening_hours?("Open "+t.opening_hours):null].filter(Boolean).join(" · ")}); }); }
+      out.push({name:nm,oh:t.opening_hours||null,lat:+lat,lon:+lon,cat:c2,sub:[t.brand&&t.brand!==nm?t.brand:null,t["addr:street"],t.opening_hours?("Open "+t.opening_hours):null].filter(Boolean).join(" · ")}); }); }
   /* how far from the route, and near which stop */
   out.forEach(x=>{ let bd=Infinity,bp=null; pts.forEach(p=>{ const d=hav(x,p); if(d<bd){bd=d;bp=p;} }); x.off=bd; x.nearName=bp&&bp.name; });
   const seen=new Set(); out=out.filter(x=>{ const k=norm(x.name)+Math.round(x.lat*2000)+","+Math.round(x.lon*2000); if(seen.has(k)) return false; seen.add(k); return true; })
@@ -1811,6 +1836,67 @@ function viaPlan(){ const V=S.via; if(!V||!S.from||!S.to) return null;
   const lb=b.legs.map(l=>({...l,from:l.from==="O"?"V":l.from,to:l.to==="O"?"V":l.to,seq:swap(l.seq,"O","V"),vseq:swap(l.vseq,"O","V")}));
   const visit={type:"walk",visit:true,from:"V",to:"V",m:0,min:15};
   const legs=[...la,visit,...lb]; return {legs,min:a.min+15+b.min,fare:a.fare+b.fare,walkM:a.walkM+b.walkM,boards:a.boards+b.boards,sig:"via:"+a.sig+"|"+b.sig,tags:["With your stop"],via:true}; }
+
+/* ================= Shop: open-now supermarkets, live prices, list, vendors ================= */
+let shopList=store.get("waka.list",[]);
+/* "open now" from OpenStreetMap opening_hours: 24/7, "08:00-21:00", "Mo-Sa 08:00-21:00; Su 12:00-18:00", "Su off" */
+function openNow(oh,d=new Date()){ if(!oh) return null; oh=String(oh).trim(); if(/24\/7/.test(oh)) return true;
+  const D=["Su","Mo","Tu","We","Th","Fr","Sa"], today=d.getDay(), mins=d.getHours()*60+d.getMinutes(); let ruled=false, open=false, dayRules=false;
+  for(const part of oh.split(";")){ const m=part.trim().match(/^((?:[A-Z][a-z](?:-[A-Z][a-z])?,?)+)?\s*(.*)$/); if(!m) continue;
+    let days=null; if(m[1]){ dayRules=true; days=new Set(); m[1].split(",").forEach(r=>{ const [a,b]=r.split("-"); let i=D.indexOf(a), j=D.indexOf(b||a); if(i<0||j<0) return; for(let k=i;;k=(k+1)%7){ days.add(k); if(k===j) break; } }); }
+    if(days&&!days.has(today)) continue; ruled=true; open=false;
+    if(/off|closed/i.test(m[2])) continue;
+    for(const t of m[2].matchAll(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/g)){ const a=+t[1]*60+ +t[2], b=+t[3]*60+ +t[4]; if(b>a? mins>=a&&mins<b : mins>=a||mins<b) open=true; } }
+  return ruled? open : dayRules? false : null; }   /* hours given for other days only: closed today */
+const shopHere = () => S.from||{name:curCity().name,lat:curCity().center[0],lon:curCity().center[1]};
+const etaText = d => { const m=d*1.3; return m<900? `${Math.max(1,Math.round(m/WALK_MPM))} min walk` : `about ${Math.max(3,Math.round(m/1000/15*60+4))} min by keke`; };
+const waNum = ph => { const d=String(ph||"").replace(/\D/g,""); return d.startsWith("0")? "234"+d.slice(1) : d; };
+const ago = t => { const m=Math.round((Date.now()-new Date(t))/60000); return m<60?`${Math.max(1,m)} min ago`:m<1440?`${Math.round(m/60)} h ago`:`${Math.round(m/1440)} d ago`; };
+async function loadShop(force){ const h=shopHere(), key=h.lat.toFixed(3)+","+h.lon.toFixed(3); if(!force&&S.shop&&S.shop.key===key&&(S.shop.loading||Date.now()-S.shop.at<600000)) return;
+  S.shop={key,at:Date.now(),loading:true}; if(document.body.dataset.screen==="shop") render();
+  const pt=[{lat:h.lat,lon:h.lon,name:h.name}];
+  const [sup,mkt,ven]=await Promise.all([findPlaces("super",pt,3000),findPlaces("market",pt,3000),findPlaces("vendor",pt,3000)]);
+  let prices=[]; if(online&&sb){ try{ const {data}=await sb.rpc("prices_near",{p_lat:h.lat,p_lon:h.lon,p_radius_m:6000,p_item:null}); prices=data||[]; }catch(e){} }
+  const all=[...(sup||[]),...(mkt||[]),...(ven||[])], seen=new Set();
+  const stores=sup===null&&mkt===null&&!(ven||[]).length? null : all.filter(x=>{ const k=norm(x.name)+Math.round(x.lat*2000)+","+Math.round(x.lon*2000); if(seen.has(k)) return false; seen.add(k); return true; });
+  S.shop={key,at:Date.now(),stores,prices}; if(document.body.dataset.screen==="shop") render(); }
+function bestBasket(){ const P=(S.shop&&S.shop.prices)||[]; if(!shopList.length||!P.length) return null;
+  const by={}; shopList.forEach(it=>{ const k=norm(it); P.filter(p=>norm(p.item).includes(k)||k.includes(norm(p.item))).forEach(p=>{ const st=by[p.store]=by[p.store]||{store:p.store,lat:p.store_lat,lon:p.store_lon,items:{}}; if(!(it in st.items)||p.price<st.items[it]) st.items[it]=p.price; }); });
+  return Object.values(by).map(st=>({...st,total:Object.values(st.items).reduce((a,b)=>a+b,0),have:Object.keys(st.items).length})).sort((a,b)=>(b.have-a.have)||(a.total-b.total)).slice(0,3); }
+function shopView(){ const h=shopHere(), SH=S.shop||{}, stores=SH.stores, P=SH.prices||[], basket=bestBasket();
+  const st=(stores||[]).filter(x=>!x.vendor).map(x=>({...x,open:openNow(x.oh)})).sort((a,b)=>((b.open===true)-(a.open===true))||((a.open===false)-(b.open===false))||(a.off-b.off)).slice(0,12);
+  const vend=(stores||[]).filter(x=>x.vendor);
+  return `<div><h1 class="hd" style="font-size:31px;margin:2px 0 0">Shop</h1><p class="small mute" style="margin:4px 0 0">Near <b>${esc(h.name)}</b> · <a href="#plan" style="font-weight:600">change</a>. Open now, today's prices, and the way there.</p></div>
+  <div class="card" style="display:flex;flex-direction:column;gap:8px"><b>Your shopping list</b>
+    <form class="row" style="flex-wrap:nowrap;gap:8px" id="listForm"><input class="inp" id="listIn" maxlength="40" placeholder="Add an item: rice, bread, eggs…" style="flex:1;min-height:42px"><button class="btn ghost" style="min-height:42px">Add</button></form>
+    ${shopList.length?`<div class="row">${shopList.map((it,i)=>`<button class="chip" data-act="listDel" data-i="${i}" aria-label="Remove ${esc(it)}">${esc(it)} ✕</button>`).join("")}</div>`:`<span class="tiny mute">Add what you need and Waka shows where it's cheapest near you.</span>`}
+    ${basket&&basket.length?`<div style="display:flex;flex-direction:column;gap:6px">${basket.map((b,i)=>`<div style="border:1px solid ${i===0?"#16A34A":"var(--line)"};border-radius:12px;padding:8px 10px;${i===0?"background:#F0FDF4":""}"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${i===0?"✓ Cheapest: ":""}${esc(b.store)}</b><b>${naira(b.total)}</b></div><div class="tiny mute">${b.have} of ${shopList.length} items · ${Object.entries(b.items).map(([k,v])=>`${esc(k)} ${naira(v)}`).join(" · ")}</div><div class="row" style="gap:6px;margin-top:6px"><button class="chip" style="min-height:32px;font-size:12.5px" data-act="shopGo" data-n="${esc(b.store)}" data-la="${b.lat}" data-lo="${b.lon}">Go here</button></div></div>`).join("")}</div>`:shopList.length?`<span class="tiny mute">No confirmed prices for these near you yet. Report what you see in the shop and Waka fills in.</span>`:""}
+  </div>
+  <div><div class="row" style="justify-content:space-between"><div class="hd" style="font-size:20px">Supermarkets & markets</div><button class="chip" data-act="shopRefresh" style="min-height:32px;font-size:12.5px">↻ Refresh</button></div>
+  ${SH.loading||stores===undefined?`<p class="small mute">Looking around ${esc(h.name)}…</p>`:stores===null?`<p class="small mute">Couldn't reach OpenStreetMap. Check your internet and tap Refresh.</p>`:!st.length?`<p class="small mute">No supermarkets mapped near here yet. Waka vendors and riders' reports will fill this in.</p>`:
+    st.map(x=>`<div class="row" style="flex-wrap:nowrap;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)"><span style="font-size:22px" aria-hidden="true">${(CATS[x.cat]||CATS.super).icon}</span>
+      <span style="flex:1;min-width:0"><b style="display:block;font-size:15px">${esc(x.name)}</b><span class="tiny"><span style="font-weight:700;color:${x.open===true?"#16A34A":x.open===false?"#C8102E":"var(--mute)"}">${x.open===true?"● Open now":x.open===false?"● Closed now":"Hours not known"}</span> · ${metres(x.off)} · ${etaText(x.off)}</span>${x.oh?`<span class="tiny mute" style="display:block">${esc(x.oh)}</span>`:""}</span>
+      <span style="display:flex;flex-direction:column;gap:4px"><button class="chip" style="min-height:32px;font-size:12.5px;padding:0 10px" data-act="shopGo" data-n="${esc(x.name)}" data-la="${x.lat}" data-lo="${x.lon}">Go here</button><button class="chip" style="min-height:32px;font-size:12.5px;padding:0 10px" data-act="priceAt" data-n="${esc(x.name)}" data-la="${x.lat}" data-lo="${x.lon}">Add price</button></span></div>`).join("")}</div>
+  ${vend.length?`<div><div class="hd" style="font-size:20px">Waka vendors near you</div>${vend.map(v=>`<div class="card" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"><b>${esc(v.name)}</b><span class="tiny mute">${v.sub?esc(v.sub)+" · ":""}${metres(v.off)} away</span><div class="row" style="gap:6px">${v.phone?`<a class="chip" style="min-height:34px" target="_blank" rel="noopener" href="https://wa.me/${waNum(v.phone)}?text=${encodeURIComponent(`Hello ${v.name}, I found you on Waka.${shopList.length?" I want: "+shopList.join(", ")+".":""} Can I come pick up?`)}">Order on WhatsApp</a><a class="chip" style="min-height:34px" href="tel:${esc(v.phone)}">Call</a>`:""}<button class="chip" style="min-height:34px" data-act="shopGo" data-n="${esc(v.name)}" data-la="${v.lat}" data-lo="${v.lon}">Go here</button></div></div>`).join("")}</div>`:""}
+  ${S.priceFor?`<div class="card" id="priceCard" style="display:flex;flex-direction:column;gap:8px;border:2px solid #16A34A"><b>Add a price at ${esc(S.priceFor.name)}</b>
+    <input class="inp" id="prItem" maxlength="60" placeholder="Item, e.g. Golden Penny spaghetti"><div class="row" style="flex-wrap:nowrap;gap:8px"><input class="inp" id="prPrice" inputmode="numeric" placeholder="Price ₦" style="flex:1;min-width:0"><input class="inp" id="prUnit" maxlength="30" placeholder="Size, e.g. 500g" style="flex:1;min-width:0"></div>
+    <div class="row" style="gap:8px"><button class="btn" data-act="priceSave">Save price</button><button class="btn ghost" data-act="priceCancel">Cancel</button></div></div>`:""}
+  <div><div class="hd" style="font-size:20px">Prices riders saw</div><span class="tiny mute">Last 14 days · shown when 2 or more riders agree</span>
+  ${P.length?P.slice(0,30).map(p=>`<div class="row" style="justify-content:space-between;flex-wrap:nowrap;padding:8px 0;border-bottom:1px solid var(--line)"><span style="min-width:0"><b style="font-size:14.5px">${esc(p.item)}</b>${p.unit?` <span class="tiny mute">(${esc(p.unit)})</span>`:""}<span class="tiny mute" style="display:block">${esc(p.store)} · ${p.riders} riders · ${ago(p.last_seen)}</span></span><b style="white-space:nowrap">${naira(p.price)}</b></div>`).join(""):`<p class="small mute" style="margin:6px 0 0">No confirmed prices near here yet. Be the first: tap <b>Add price</b> on a shop.</p>`}</div>
+  <a class="slim" href="#vendor"><span aria-hidden="true">🧑🏾‍🍳</span><span style="flex:1"><b>Sell something?</b> <span class="mute">List your business on Waka</span></span><span aria-hidden="true">›</span></a>`; }
+after.shop=()=>{ loadShop(); const f=$("#listForm"); if(f) f.onsubmit=e=>{ e.preventDefault(); const v=$("#listIn").value.trim(); if(v.length<2) return; if(!shopList.some(x=>norm(x)===norm(v))) shopList.push(cut(v,40)); store.set("waka.list",shopList); $("#listIn").value=""; render(); setTimeout(()=>$("#listIn")&&$("#listIn").focus(),30); };
+  if(S.priceFor&&!S.priceShown){ S.priceShown=true; setTimeout(()=>{ const c=$("#priceCard"); if(c) c.scrollIntoView({block:"center"}); },30); } };
+Object.assign(ACT,{
+  listDel(b){ shopList.splice(+b.dataset.i,1); store.set("waka.list",shopList); render(); },
+  shopRefresh(){ loadShop(true); },
+  shopGo(b){ const p={name:b.dataset.n,lat:+b.dataset.la,lon:+b.dataset.lo}; S.to={...p,full:p.name}; S.via=null; saveLast(); S.opts=[]; location.hash="routes"; render(); },
+  priceAt(b){ S.priceFor={name:b.dataset.n,lat:+b.dataset.la,lon:+b.dataset.lo}; S.priceShown=false; render(); },
+  priceCancel(){ S.priceFor=null; render(); },
+  priceSave(){ const F=S.priceFor; if(!F) return; const item=$("#prItem").value.trim(), price=Math.round(+$("#prPrice").value.replace(/[^0-9.]/g,"")), unit=$("#prUnit").value.trim();
+    if(item.length<2){ toast("Write the item."); return; } if(!(price>=10)){ toast("Write the price in naira."); return; }
+    queue("price_reports",{city:cityAt(F)?.id||settings.city,item:cut(item,60),unit:unit?cut(unit,30):null,store:cut(F.name,80),store_lat:+F.lat.toFixed(6),store_lon:+F.lon.toFixed(6),price});
+    S.priceFor=null; toast("Thanks! Once another rider confirms, everyone sees it."); render(); }
+});
 /* ================= opinions (saved to the feedback table, no AI needed) ================= */
 let opinions = store.get("waka.opinions",[]);
 const OP_TOPICS=[["fares","Fares"],["routes","Routes & stops"],["drivers","Drivers & safety"],["roads","Roads & traffic"],["app","The Waka app"],["idea","An idea"],["other","Something else"]];
@@ -2035,7 +2121,7 @@ async function liveFetch(){ const m=$("#osmMsg"); m.textContent=`Asking OpenStre
 /* ================= start ================= */
 function drawLegend(){ /* the legend now shows only the modes in the trip on screen (see drawMap) */ }
 function setCityUI(){ document.body.dataset.city=settings.city; const el=$("#cityName"); if(el) el.textContent=curCity().name.replace(/ \(.*/,""); drawLegend(); }
-setCityUI(); syncUserStops(); buildGraph(); initMap(); initServer();
+setCityUI(); syncUserStops(); buildGraph(); try{ restoreLive(); }catch(e){ store.set("waka.live",null); } initMap(); initServer();
 try{ if(navigator.permissions&&navigator.geolocation) navigator.permissions.query({name:"geolocation"}).then(st=>{ if(st.state!=="granted") return;
   navigator.geolocation.getCurrentPosition(pp=>{ const p={lat:pp.coords.latitude,lon:pp.coords.longitude}; const cc=cityAt(p); if(!cc) return; if(cc.id!==settings.city){ settings.city=cc.id; saveSettings(); setCityUI(); }
     S.from={name:nearName(p,"My location"),lat:p.lat,lon:p.lon}; if(document.body.dataset.screen==="plan"){ render(); if(map) map.setView([p.lat,p.lon],14); } },()=>{},{timeout:8000}); }).catch(()=>{}); }catch(e){}
